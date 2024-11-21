@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.contrib.auth import authenticate
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser, DjangoModelPermissions
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import status
 from rest_framework import viewsets, permissions, generics
@@ -10,6 +10,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.decorators import permission_classes
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiExample
+from rest_framework_simplejwt.views import TokenObtainPairView
 from .models import User
 from .serializers import (
     UserSerializer,
@@ -40,6 +41,10 @@ class UserRegisterAPIView(generics.CreateAPIView):
                 status=status.HTTP_201_CREATED
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    permission_classes = [AllowAny]  # Allow anyone to access the login endpoint
 
 
 # TODO: after deploy remove and use token-based auth
@@ -76,6 +81,7 @@ class LogoutAPIView(APIView):
 
     def post(self, request):
         try:
+            print("\nlogout\n")
             # Extract the refresh token from the request body
             refresh_token = request.data.get("refresh")
             token = RefreshToken(refresh_token)
@@ -109,10 +115,10 @@ class UserViewSet(ModelViewSet):
     """
     Viewset for managing users (admin or superuser can use this)
     """
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAuthenticated]
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
 
 class UserDetail(generics.RetrieveAPIView):
@@ -128,3 +134,14 @@ class GroupViewSet(viewsets.ModelViewSet):
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_permissions(self):
+        """
+        Customize permissions based on actions.
+        - Admins can list, create, update, and delete users.
+        """
+        if self.action in ['list', 'retrieve', 'update', 'partial_update', 'destroy']:
+            self.permission_classes = [IsAdminUser]
+        elif self.action == 'create':
+            self.permission_classes = [DjangoModelPermissions]
+        return [permission() for permission in self.permission_classes]
