@@ -1,0 +1,40 @@
+version: "3.8"
+
+services:
+  swe_db:
+    container_name: postgres_swe
+    image: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+  web:
+    build: .
+    image: arbashop
+    container_name: django_swe
+    restart: unless-stopped
+    command: python backend/manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/app
+      - dmedia:/media
+      - dstatic:/static
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=1
+      - DB_NAME=db
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_HOST=postgres_swe
+      - DB_PORT=5432
+    depends_on:
+      - swe_db
+
+volumes:
+  pgdata:
+  dmedia:
+  dstatic:
