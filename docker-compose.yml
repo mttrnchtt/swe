@@ -13,15 +13,15 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
   web:
-    build: .
+    build:
+      context: .
     image: arbashop
     container_name: django_swe
     restart: unless-stopped
-    command: python backend/manage.py runserver 0.0.0.0:8000
     volumes:
-      - .:/app
-      - dmedia:/media
-      - dstatic:/static
+      - ./backend:/app  # Only mount the backend directory
+      - dmedia:/app/media  # Mount media files correctly
+      - dstatic:/app/static  # Mount static files correctly
     ports:
       - "8000:8000"
     environment:
