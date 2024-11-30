@@ -7,7 +7,7 @@ from django.utils.encoding import smart_str, smart_bytes, DjangoUnicodeDecodeErr
 from rest_framework import generics, status, views
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 import jwt
 from .serializers import (
     RegisterSerializer,
@@ -16,6 +16,8 @@ from .serializers import (
     ResetPasswordRequestEmailSerializer,
     SetNewPasswordSerializer,
     LogoutSerializer,
+    ProfileSerializer,
+    ApproveFarmerSerializer,
 )
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from .models import User
@@ -35,12 +37,27 @@ class RegisterView(generics.GenericAPIView):
         token = RefreshToken.for_user(user).access_token
 
         current_site = get_current_site(request).domain
-        print(current_site)
         relative_link = reverse('email-verify')
         abs_url = 'http://' + current_site + relative_link + "?token=" + str(token)
-        email_body = 'Hi ' + user.username + '! Use the link below to verify your email. \n' + abs_url
+        email_body = f"""
+            Dear {user.username},
+
+            Thank you for registering on our platform!
+
+            """
+        print(user.role)
+        if user.role == 'farmer':
+            print("FARMER!")
+            email_body += """
+            Your farmer account approval will be considered soon. 
+            Once approved, you will receive a notification email.
+            """
+        email_body += f"""
+            Use the link below to activate your email.
+            {abs_url}
+        """
         data = {
-            'email_subject': 'Verify your email',
+            'email_subject': 'Activate your email',
             'email_body': email_body,
             'email_to': user.email,
             'domain': current_site,
@@ -78,9 +95,10 @@ class VerifyEmail(views.APIView):
             if not user.is_active:
                 user.is_active = True
                 user.save()
-            if not user.is_verified:
-                user.is_verified = True
-                user.save()
+            # TODO: Remove it for admin's regulation
+            # if not user.is_verified:
+            #     user.is_verified = True
+            #     user.save()
             return Response({'message': 'Your account is activated'}, status=status.HTTP_200_OK)
         except jwt.ExpiredSignatureError as identifier:
             return Response({'message': 'Activation link is expired'}, status=status.HTTP_400_BAD_REQUEST)
@@ -163,4 +181,56 @@ class LogoutAPIView(generics.GenericAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    
+
+class ProfileAPIView(generics.GenericAPIView):
+    serializer_class = ProfileSerializer
+    permission_classes = [IsAuthenticated,]
+
+    def get(self, request):
+        serializer = self.serializer_class(request.user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    def put(self, request):
+        serializer = self.serializer_class(request.user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ApproveFarmerAPIView(generics.GenericAPIView):
+    serializer_class = ApproveFarmerSerializer
+    permission_classes = [IsAdminUser,]
+
+    def post(self, request):
+        try:
+            email = request.data.get('email', '')
+            user = User.objects.get(email=email, role='farmer')
+        except User.DoesNotExist:
+            return Response({'error': 'Farmer not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        if user.is_verified:
+            return Response({'message': 'Farmer is already verified'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        user.is_verified = True
+        user.save()
+
+        email_data = {
+            'email_subject': 'Account Approval Notification',
+            'email_body': f"""
+            Dear {user.username},
+            
+            Congratulations! Your farmer account has been approved by the admin. You can now access all farmer-specific features on our platform.
+
+            Thank you for being a part of our community!
+            
+            Best regards,
+            Arbashop Team
+            """,
+            'email_to': user.email,
+        }
+
+        Util.send_email(email_data)
         return Response(status=status.HTTP_204_NO_CONTENT)

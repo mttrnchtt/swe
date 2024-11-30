@@ -10,22 +10,24 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 
 class UserManager(BaseUserManager):
-    def create_user(self, username, email, password=None, **extra_fields):
+    def create_user(self, username, email, password=None, role='buyer', phone_number=None, address=None, **extra_fields):
         print(f"Creating user: username={username}, email={email}, password={password}")
         if username is None:
             raise TypeError('User should have a username')
         if email is None:
             raise TypeError('User should have an email')
+        if password is None:
+            raise TypeError('Password should not be None')
         
         user = self.model(
             username=username,
-            email=self.normalize_email(email)
+            email=self.normalize_email(email),
+            role=role,
+            phone_number=phone_number,
+            address=address,
+            **extra_fields
         )
-        if password:
-            user.set_password(password)
-            print(f"Password hashed: {user.password}")
-        else:
-            raise TypeError('Password should not be None')
+        user.set_password(password)
         user.save(using=self._db)
         return user
 

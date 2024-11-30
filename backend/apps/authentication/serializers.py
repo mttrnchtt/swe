@@ -25,8 +25,14 @@ class RegisterSerializer(serializers.ModelSerializer):
         return attrs
     
     def create(self, validated_data):
-        print("RegisterSerializer: Creating user with validated data:", validated_data)
-        return User.objects.create_user(**validated_data)
+        return User.objects.create_user(
+            email=validated_data['email'],
+            username=validated_data['username'],
+            password=validated_data['password'],
+            role=validated_data.get('role', 'buyer'),  # Default to 'buyer' if role is not provided
+            phone_number=validated_data.get('phone_number', None),
+            address=validated_data.get('address', None),
+        )
         
 
 class EmailVerificationSerializer(serializers.ModelSerializer):
@@ -66,8 +72,6 @@ class LoginSerializer(serializers.ModelSerializer):
             raise AuthenticationFailed('Invalid credentials provided')
         if not user.is_active:
             raise AuthenticationFailed('Account is inactive, please, contact admin')
-        if not user.is_verified:
-            raise AuthenticationFailed('Email is not verified')
 
         return {
             'email': user.email,
@@ -126,3 +130,16 @@ class LogoutSerializer(serializers.Serializer):
             RefreshToken(self.token).blacklist()
         except TokenError:
             self.fail('bad_token')
+
+
+class ProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'role', 'is_verified', 'is_active', 'phone_number', 'address']
+        read_only_fields = ['email', 'role', 'is_verified', 'is_active']
+
+
+class ApproveFarmerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['email']
