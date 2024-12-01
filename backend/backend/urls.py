@@ -27,7 +27,6 @@ urlpatterns = [
     # Local app urls
     path('farm/', include('apps.farm.urls')),
     path('auth/', include('apps.authentication.urls')),
-    path('products/', include('apps.products.urls')),
     # Swagger-UI urls
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),

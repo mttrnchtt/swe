@@ -54,7 +54,6 @@ DJANGO_APPS = [
 
 LOCAL_APPS = [
     'apps.authentication',
-    'apps.products',
     'apps.farm',
 ]
 
