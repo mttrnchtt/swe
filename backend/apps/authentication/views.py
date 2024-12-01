@@ -45,9 +45,7 @@ class RegisterView(generics.GenericAPIView):
             Thank you for registering on our platform!
 
             """
-        print(user.role)
         if user.role == 'farmer':
-            print("FARMER!")
             email_body += """
             Your farmer account approval will be considered soon. 
             Once approved, you will receive a notification email.
@@ -89,7 +87,6 @@ class VerifyEmail(views.APIView):
         token = request.GET.get('token')
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
-            print('payload 1 ' + str(payload))
             user = User.objects.get(id=payload['user_id'])
             if not user.is_active:
                 user.is_active = True
@@ -127,7 +124,6 @@ class RequestPasswordResetEmail(generics.GenericAPIView):
             token = PasswordResetTokenGenerator().make_token(user)
 
             current_site = get_current_site(request=request).domain
-            print(current_site)
             relative_link = reverse('password-reset-confirm', kwargs={'uidb64': uidb64, 'token': token})
             abs_url = 'http://' + current_site + relative_link
             email_body = 'Hi!\n' + 'Use the link below to reset your password. \n' + abs_url

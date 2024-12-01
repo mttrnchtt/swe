@@ -172,5 +172,8 @@ EMAIL_HOST_PASSWORD = 'YuTu48hiwA'
 
 
 SPECTACULAR_SETTINGS = {
-    'COMPONENT_SPLIT_REQUEST': True
+    'COMPONENT_SPLIT_REQUEST': True,
+    'SWAGGER_UI_SETTINGS': {
+        'supportedSubmitMethods': ['get', 'post', 'put', 'delete', 'patch'],
+    },
 }

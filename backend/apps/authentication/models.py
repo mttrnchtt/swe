@@ -11,7 +11,6 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 class UserManager(BaseUserManager):
     def create_user(self, username, email, password=None, role='buyer', phone_number=None, address=None, **extra_fields):
-        print(f"Creating user: username={username}, email={email}, password={password}")
         if username is None:
             raise TypeError('User should have a username')
         if email is None:
