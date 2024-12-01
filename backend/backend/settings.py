@@ -38,6 +38,8 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',                # Default backend
 ]
 
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # Application definition
 
@@ -53,6 +55,7 @@ DJANGO_APPS = [
 LOCAL_APPS = [
     'apps.authentication',
     'apps.products',
+    'apps.farm',
 ]
 
 THIRD_PARTY_APPS = [
@@ -167,3 +170,8 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_HOST_USER = 'alibi.tolebay@nu.edu.kz'
 EMAIL_HOST_PASSWORD = 'YuTu48hiwA'
+
+
+SPECTACULAR_SETTINGS = {
+    'COMPONENT_SPLIT_REQUEST': True
+}

@@ -87,7 +87,6 @@ class VerifyEmail(views.APIView):
     )
     def get(self, request):
         token = request.GET.get('token')
-        print('\n', token, '\n')
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
             print('payload 1 ' + str(payload))
