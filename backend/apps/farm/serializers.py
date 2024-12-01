@@ -11,6 +11,8 @@ class FarmSerializer(serializers.ModelSerializer):
             'name',
             'location',
             'description',
+            'created_at',
+            'updated_at',
         ]
         read_only_fields = ['owner']
 
@@ -19,7 +21,8 @@ class FarmSerializer(serializers.ModelSerializer):
 class ProductImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductImage
-        fields = ['id', 'image']
+        fields = ['id', 'image', 'created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at']
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -38,7 +41,10 @@ class ProductSerializer(serializers.ModelSerializer):
             'description',
             'farm',
             'images',
+            'created_at',
+            'updated_at',
         ]
+        read_only_fields = ['created_at', 'updated_at']
 
     def create(self, validated_data):
         print(self.context['request'].FILES)
