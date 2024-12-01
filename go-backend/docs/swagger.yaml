@@ -1,0 +1,434 @@
+basePath: /
+definitions:
+  model.CreateFarmRequest:
+    properties:
+      address:
+        type: string
+      farm_name:
+        type: string
+      farm_size:
+        type: number
+      farmer_id:
+        type: string
+    required:
+    - address
+    - farm_name
+    - farm_size
+    - farmer_id
+    type: object
+  model.CreateItemRequest:
+    properties:
+      category:
+        description: Category of the item
+        type: string
+      farm_id:
+        description: Farm ID to associate the item
+        type: integer
+      name:
+        description: Name of the item
+        type: string
+      price:
+        description: Price per unit
+        type: number
+      quantity:
+        description: Available quantity
+        minimum: 0
+        type: integer
+      unit:
+        description: Unit of measurement
+        type: string
+    required:
+    - category
+    - farm_id
+    - name
+    - price
+    - quantity
+    - unit
+    type: object
+  model.ErrorResponse:
+    properties:
+      error:
+        type: string
+      message:
+        type: string
+    type: object
+  model.FarmResponse:
+    properties:
+      address:
+        type: string
+      farm_name:
+        type: string
+      farm_size:
+        type: number
+      farmer_id:
+        type: string
+      id:
+        type: integer
+    type: object
+  model.ItemResponse:
+    properties:
+      category_id:
+        type: string
+      description:
+        type: string
+      farm_id:
+        type: integer
+      id:
+        type: integer
+      image:
+        type: string
+      name:
+        type: string
+      price:
+        type: number
+      quantity:
+        type: integer
+      unit:
+        type: string
+    type: object
+  model.UpdateFarmRequest:
+    properties:
+      address:
+        type: string
+      farm_name:
+        type: string
+      farm_size:
+        type: number
+    type: object
+  model.UpdateItemRequest:
+    properties:
+      category:
+        description: Category of the item
+        type: string
+      name:
+        description: Name of the item
+        type: string
+      price:
+        description: Price per unit
+        type: number
+      quantity:
+        description: Available quantity
+        type: integer
+      unit:
+        description: Unit of measurement
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /api/v1/farms:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.FarmResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get all farms
+      tags:
+      - Farm
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Create farm request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.CreateFarmRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Farm created successfully
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Create a new farm
+      tags:
+      - Farm
+  /api/v1/farms/{id}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Farm ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.FarmResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get farm by ID
+      tags:
+      - Farm
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Farm ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update farm request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateFarmRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Farm updated successfully
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Update an existing farm
+      tags:
+      - Farm
+  /api/v1/items:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - in: query
+        name: keyword
+        type: string
+      - in: query
+        name: maxPrice
+        type: number
+      - in: query
+        name: minPrice
+        type: number
+      - in: query
+        name: sortByNewest
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.ItemResponse'
+            type: array
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Search items
+      tags:
+      - Item
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Create item request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.CreateItemRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Item created successfully
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Create a new item
+      tags:
+      - Item
+  /api/v1/items/{id}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: Item ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Item deleted successfully
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Delete an item
+      tags:
+      - Item
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Item ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.ItemResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get item by ID
+      tags:
+      - Item
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Item ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update item request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateItemRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Item updated successfully
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Update an existing item
+      tags:
+      - Item
+  /api/v1/items/farm/{farmId}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Farm ID
+        in: path
+        name: farmId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.ItemResponse'
+            type: array
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get all items of a farm
+      tags:
+      - Item
+securityDefinitions:
+  Bearer:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
