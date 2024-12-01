@@ -34,6 +34,23 @@ services:
     depends_on:
       - swe_db
 
+  go_backend:
+    build:
+      context: ./go-backend  # Path to the Go backend directory
+    container_name: go_backend
+    ports:
+      - "8080:8080"  # Map the Go backend port
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@postgres_swe:5432/db
+      - TOKEN_ISSUER=base
+      - LEEWAY=10m
+      - ACCESS_TOKEN_KEY=supersecret
+      - ACCESS_TOKEN_TTL=10000m
+      - REFRESH_TOKEN_KEY=supersecret1
+      - REFRESH_TOKEN_TTL=10000m
+    depends_on:
+      - swe_db
+
 volumes:
   pgdata:
   dmedia:
