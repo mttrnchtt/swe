@@ -1,5 +1,7 @@
 from django.db import models
 from django.conf import settings
+import os
+from uuid import uuid4
 
 # Create your models here.
 class Farm(models.Model):
@@ -38,8 +40,12 @@ class Product(models.Model):
     
 
 class ProductImage(models.Model):
+    def _file_path(instance, filename):
+        ext = os.path.splitext(filename)[-1]
+        return f'product_images/{uuid4().hex}{ext}'
+    
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='images')
-    image = models.ImageField(upload_to='product_images/')
+    image = models.ImageField(upload_to=_file_path)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

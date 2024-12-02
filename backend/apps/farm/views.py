@@ -76,6 +76,8 @@ class ProductListCreateAPIView(generics.ListCreateAPIView):
         return Product.objects.filter(farm__owner=self.request.user)
     
     def perform_create(self, serializer):
+        print("DEBUG: Request Data:", self.request.data)
+        print("DEBUG: Request Files:", self.request.FILES)
         farm = serializer.validated_data.get('farm')
         if farm.owner != self.request.user:
             raise PermissionDenied("You don't own this farm")
