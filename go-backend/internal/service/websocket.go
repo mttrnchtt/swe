@@ -125,7 +125,7 @@ func (w *WebSocketManager) HandleIncomingMessage(ctx context.Context, userID str
 		Msg("Received WebSocket message")
 
 	// Deserialize the message
-	var incomingMessage domain.Message
+	var incomingMessage model.SendMessageRequest
 	if err := json.Unmarshal(msg, &incomingMessage); err != nil {
 		zerolog.Ctx(ctx).Error().Err(err).Msg("Failed to unmarshal WebSocket message")
 		return err
@@ -134,8 +134,16 @@ func (w *WebSocketManager) HandleIncomingMessage(ctx context.Context, userID str
 	// Ensure the sender ID matches the user ID from the WebSocket
 	incomingMessage.SenderID = userID
 
+	message := domain.Message{
+		ChatID:     incomingMessage.ChatID,
+		SenderID:   incomingMessage.SenderID,
+		ReceiverID: incomingMessage.ReceiverID,
+		Content:    incomingMessage.Content,
+		CreatedAt:  time.Now(),
+	}
+
 	// Save the message and broadcast it
-	if _, err := w.SaveAndBroadcastMessage(ctx, incomingMessage); err != nil {
+	if _, err := w.SaveAndBroadcastMessage(ctx, message); err != nil {
 		zerolog.Ctx(ctx).Error().Err(err).Msg("Failed to save and broadcast WebSocket message")
 		return err
 	}
