@@ -57,21 +57,14 @@ func main() {
 
 	auth := middleware.NewAuth(jwt.MustParser())
 
-	farmRepository := repository.NewFarmRepository(conn)
-	farmHandler := handlers.NewFarmHandler(auth, service.NewFarmService(farmRepository))
-	farmRouter := router.NewRouter(
-		farmHandler.Router(),
+	chatRepository := repository.NewChatRepository(conn)
+	chatHandler := handlers.NewChatHandler(auth, service.NewChatService(chatRepository), service.NewWebSocketManager(chatRepository))
+	chatRouter := router.NewRouter(
+		chatHandler.Router(),
 		middleware.NewFactory(),
 	)
 
-	itemRepository := repository.NewItemRepository(conn)
-	categoryRepository := repository.NewCategoryRepository(conn)
-	itemHandler := handlers.NewItemHandler(auth, service.NewItemService(itemRepository, categoryRepository))
-	itemRouter := router.NewRouter(
-		itemHandler.Router(),
-		middleware.NewFactory(),
-	)
-	server := http.NewServer(":8080", farmRouter, itemRouter)
+	server := http.NewServer(":8080", chatRouter)
 
 	errChannel := make(chan error)
 

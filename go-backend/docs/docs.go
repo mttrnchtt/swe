@@ -15,41 +15,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/v1/farms": {
-            "get": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Farm"
-                ],
-                "summary": "Get all farms",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/model.FarmResponse"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/model.ErrorResponse"
-                        }
-                    }
-                }
-            },
+        "/api/v1/chats": {
             "post": {
                 "security": [
                     {
@@ -63,132 +29,29 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Farm"
+                    "Chat"
                 ],
-                "summary": "Create a new farm",
+                "summary": "Create a new chat",
                 "parameters": [
                     {
-                        "description": "Create farm request",
+                        "description": "Create chat request",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.CreateFarmRequest"
+                            "$ref": "#/definitions/model.CreateChatRequest"
                         }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Farm created successfully"
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/model.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/model.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/farms/{id}": {
-            "get": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Farm"
-                ],
-                "summary": "Get farm by ID",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Farm ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.FarmResponse"
+                            "$ref": "#/definitions/model.ChatResponse"
                         }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/model.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/model.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "put": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Farm"
-                ],
-                "summary": "Update an existing farm",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Farm ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Update farm request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/model.UpdateFarmRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Farm updated successfully"
                     },
                     "400": {
                         "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/model.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/model.ErrorResponse"
                         }
@@ -202,70 +65,48 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/items": {
+        "/api/v1/chats/ws/{user_id}": {
             "get": {
                 "security": [
                     {
                         "Bearer": []
                     }
                 ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
+                "description": "Establish a WebSocket connection for real-time chat messages between users.",
                 "tags": [
-                    "Item"
+                    "Chat"
                 ],
-                "summary": "Search items",
+                "summary": "WebSocket connection for real-time chat",
                 "parameters": [
                     {
                         "type": "string",
-                        "name": "keyword",
-                        "in": "query"
-                    },
-                    {
-                        "type": "number",
-                        "name": "maxPrice",
-                        "in": "query"
-                    },
-                    {
-                        "type": "number",
-                        "name": "minPrice",
-                        "in": "query"
-                    },
-                    {
-                        "type": "boolean",
-                        "name": "sortByNewest",
-                        "in": "query"
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/model.ItemResponse"
-                            }
-                        }
+                    "101": {
+                        "description": "Switching Protocols to WebSocket"
                     },
-                    "404": {
-                        "description": "Not Found",
+                    "400": {
+                        "description": "Invalid user ID",
                         "schema": {
                             "$ref": "#/definitions/model.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Internal server error",
                         "schema": {
                             "$ref": "#/definitions/model.ErrorResponse"
                         }
                     }
                 }
-            },
-            "post": {
+            }
+        },
+        "/api/v1/chats/{buyer_id}": {
+            "get": {
                 "security": [
                     {
                         "Bearer": []
@@ -278,23 +119,30 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Item"
+                    "Chat"
                 ],
-                "summary": "Create a new item",
+                "summary": "Get all chats for a farmer",
                 "parameters": [
                     {
-                        "description": "Create item request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/model.CreateItemRequest"
-                        }
+                        "type": "string",
+                        "description": "Farmer ID",
+                        "name": "farmer_id",
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
-                    "201": {
-                        "description": "Item created successfully"
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/definitions/model.ChatResponse"
+                                }
+                            }
+                        }
                     },
                     "400": {
                         "description": "Bad Request",
@@ -311,7 +159,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/items/farm/{farmId}": {
+        "/api/v1/chats/{chat_id}/messages": {
             "get": {
                 "security": [
                     {
@@ -325,14 +173,14 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Item"
+                    "Chat"
                 ],
-                "summary": "Get all items of a farm",
+                "summary": "Get all messages for a chat",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Farm ID",
-                        "name": "farmId",
+                        "description": "Chat ID",
+                        "name": "chat_id",
                         "in": "path",
                         "required": true
                     }
@@ -343,12 +191,15 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/model.ItemResponse"
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/definitions/model.MessageResponse"
+                                }
                             }
                         }
                     },
-                    "404": {
-                        "description": "Not Found",
+                    "400": {
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/model.ErrorResponse"
                         }
@@ -362,7 +213,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/items/{id}": {
+        "/api/v1/chats/{farmer_id}": {
             "get": {
                 "security": [
                     {
@@ -376,15 +227,15 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Item"
+                    "Chat"
                 ],
-                "summary": "Get item by ID",
+                "summary": "Get all chats for a farmer",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "Item ID",
-                        "name": "id",
-                        "in": "path",
+                        "type": "string",
+                        "description": "Farmer ID",
+                        "name": "farmer_id",
+                        "in": "query",
                         "required": true
                     }
                 ],
@@ -392,112 +243,17 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.ItemResponse"
+                            "type": "array",
+                            "items": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/definitions/model.ChatResponse"
+                                }
+                            }
                         }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/model.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/model.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "put": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Item"
-                ],
-                "summary": "Update an existing item",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Item ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Update item request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/model.UpdateItemRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Item updated successfully"
                     },
                     "400": {
                         "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/model.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/model.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/model.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Item"
-                ],
-                "summary": "Delete an item",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Item ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "Item deleted successfully"
-                    },
-                    "404": {
-                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/model.ErrorResponse"
                         }
@@ -513,63 +269,36 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "model.CreateFarmRequest": {
+        "model.ChatResponse": {
             "type": "object",
-            "required": [
-                "address",
-                "farm_name",
-                "farm_size",
-                "farmer_id"
-            ],
             "properties": {
-                "address": {
+                "buyer_id": {
                     "type": "string"
-                },
-                "farm_name": {
-                    "type": "string"
-                },
-                "farm_size": {
-                    "type": "number"
                 },
                 "farmer_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "last_message": {
                     "type": "string"
                 }
             }
         },
-        "model.CreateItemRequest": {
+        "model.CreateChatRequest": {
             "type": "object",
             "required": [
-                "category",
-                "farm_id",
-                "name",
-                "price",
-                "quantity",
-                "unit"
+                "buyer_id",
+                "farmer_id"
             ],
             "properties": {
-                "category": {
-                    "description": "Category of the item",
+                "buyer_id": {
+                    "description": "ID of the buyer initiating the chat",
                     "type": "string"
                 },
-                "farm_id": {
-                    "description": "Farm ID to associate the item",
-                    "type": "integer"
-                },
-                "name": {
-                    "description": "Name of the item",
-                    "type": "string"
-                },
-                "price": {
-                    "description": "Price per unit",
-                    "type": "number"
-                },
-                "quantity": {
-                    "description": "Available quantity",
-                    "type": "integer",
-                    "minimum": 0
-                },
-                "unit": {
-                    "description": "Unit of measurement",
+                "farmer_id": {
+                    "description": "ID of the farmer",
                     "type": "string"
                 }
             }
@@ -585,93 +314,26 @@ const docTemplate = `{
                 }
             }
         },
-        "model.FarmResponse": {
+        "model.MessageResponse": {
             "type": "object",
             "properties": {
-                "address": {
-                    "type": "string"
+                "chat_id": {
+                    "type": "integer"
                 },
-                "farm_name": {
-                    "type": "string"
-                },
-                "farm_size": {
-                    "type": "number"
-                },
-                "farmer_id": {
+                "content": {
                     "type": "string"
                 },
                 "id": {
                     "type": "integer"
-                }
-            }
-        },
-        "model.ItemResponse": {
-            "type": "object",
-            "properties": {
-                "category_id": {
+                },
+                "receiver_id": {
                     "type": "string"
                 },
-                "description": {
+                "sender_id": {
                     "type": "string"
                 },
-                "farm_id": {
-                    "type": "integer"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "image": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "price": {
-                    "type": "number"
-                },
-                "quantity": {
-                    "type": "integer"
-                },
-                "unit": {
-                    "type": "string"
-                }
-            }
-        },
-        "model.UpdateFarmRequest": {
-            "type": "object",
-            "properties": {
-                "address": {
-                    "type": "string"
-                },
-                "farm_name": {
-                    "type": "string"
-                },
-                "farm_size": {
-                    "type": "number"
-                }
-            }
-        },
-        "model.UpdateItemRequest": {
-            "type": "object",
-            "properties": {
-                "category": {
-                    "description": "Category of the item",
-                    "type": "string"
-                },
-                "name": {
-                    "description": "Name of the item",
-                    "type": "string"
-                },
-                "price": {
-                    "description": "Price per unit",
-                    "type": "number"
-                },
-                "quantity": {
-                    "description": "Available quantity",
-                    "type": "integer"
-                },
-                "unit": {
-                    "description": "Unit of measurement",
+                "timestamp": {
+                    "description": "ISO 8601 format",
                     "type": "string"
                 }
             }

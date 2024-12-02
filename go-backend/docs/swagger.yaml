@@ -1,49 +1,27 @@
 basePath: /
 definitions:
-  model.CreateFarmRequest:
+  model.ChatResponse:
     properties:
-      address:
+      buyer_id:
         type: string
-      farm_name:
-        type: string
-      farm_size:
-        type: number
       farmer_id:
         type: string
-    required:
-    - address
-    - farm_name
-    - farm_size
-    - farmer_id
+      id:
+        type: integer
+      last_message:
+        type: string
     type: object
-  model.CreateItemRequest:
+  model.CreateChatRequest:
     properties:
-      category:
-        description: Category of the item
+      buyer_id:
+        description: ID of the buyer initiating the chat
         type: string
-      farm_id:
-        description: Farm ID to associate the item
-        type: integer
-      name:
-        description: Name of the item
-        type: string
-      price:
-        description: Price per unit
-        type: number
-      quantity:
-        description: Available quantity
-        minimum: 0
-        type: integer
-      unit:
-        description: Unit of measurement
+      farmer_id:
+        description: ID of the farmer
         type: string
     required:
-    - category
-    - farm_id
-    - name
-    - price
-    - quantity
-    - unit
+    - buyer_id
+    - farmer_id
     type: object
   model.ErrorResponse:
     properties:
@@ -52,204 +30,66 @@ definitions:
       message:
         type: string
     type: object
-  model.FarmResponse:
+  model.MessageResponse:
     properties:
-      address:
-        type: string
-      farm_name:
-        type: string
-      farm_size:
-        type: number
-      farmer_id:
+      chat_id:
+        type: integer
+      content:
         type: string
       id:
         type: integer
-    type: object
-  model.ItemResponse:
-    properties:
-      category_id:
+      receiver_id:
         type: string
-      description:
+      sender_id:
         type: string
-      farm_id:
-        type: integer
-      id:
-        type: integer
-      image:
-        type: string
-      name:
-        type: string
-      price:
-        type: number
-      quantity:
-        type: integer
-      unit:
-        type: string
-    type: object
-  model.UpdateFarmRequest:
-    properties:
-      address:
-        type: string
-      farm_name:
-        type: string
-      farm_size:
-        type: number
-    type: object
-  model.UpdateItemRequest:
-    properties:
-      category:
-        description: Category of the item
-        type: string
-      name:
-        description: Name of the item
-        type: string
-      price:
-        description: Price per unit
-        type: number
-      quantity:
-        description: Available quantity
-        type: integer
-      unit:
-        description: Unit of measurement
+      timestamp:
+        description: ISO 8601 format
         type: string
     type: object
 info:
   contact: {}
 paths:
-  /api/v1/farms:
-    get:
-      consumes:
-      - application/json
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/model.FarmResponse'
-            type: array
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/model.ErrorResponse'
-      security:
-      - Bearer: []
-      summary: Get all farms
-      tags:
-      - Farm
+  /api/v1/chats:
     post:
       consumes:
       - application/json
       parameters:
-      - description: Create farm request
+      - description: Create chat request
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/model.CreateFarmRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Farm created successfully
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/model.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/model.ErrorResponse'
-      security:
-      - Bearer: []
-      summary: Create a new farm
-      tags:
-      - Farm
-  /api/v1/farms/{id}:
-    get:
-      consumes:
-      - application/json
-      parameters:
-      - description: Farm ID
-        in: path
-        name: id
-        required: true
-        type: integer
+          $ref: '#/definitions/model.CreateChatRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.FarmResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/model.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/model.ErrorResponse'
-      security:
-      - Bearer: []
-      summary: Get farm by ID
-      tags:
-      - Farm
-    put:
-      consumes:
-      - application/json
-      parameters:
-      - description: Farm ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: Update farm request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/model.UpdateFarmRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Farm updated successfully
+            $ref: '#/definitions/model.ChatResponse'
         "400":
           description: Bad Request
           schema:
             $ref: '#/definitions/model.ErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/model.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/model.ErrorResponse'
       security:
       - Bearer: []
-      summary: Update an existing farm
+      summary: Create a new chat
       tags:
-      - Farm
-  /api/v1/items:
+      - Chat
+  /api/v1/chats/{buyer_id}:
     get:
       consumes:
       - application/json
       parameters:
-      - in: query
-        name: keyword
+      - description: Farmer ID
+        in: query
+        name: farmer_id
+        required: true
         type: string
-      - in: query
-        name: maxPrice
-        type: number
-      - in: query
-        name: minPrice
-        type: number
-      - in: query
-        name: sortByNewest
-        type: boolean
       produces:
       - application/json
       responses:
@@ -257,36 +97,10 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/model.ItemResponse'
+              items:
+                $ref: '#/definitions/model.ChatResponse'
+              type: array
             type: array
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/model.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/model.ErrorResponse'
-      security:
-      - Bearer: []
-      summary: Search items
-      tags:
-      - Item
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Create item request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/model.CreateItemRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Item created successfully
         "400":
           description: Bad Request
           schema:
@@ -297,111 +111,17 @@ paths:
             $ref: '#/definitions/model.ErrorResponse'
       security:
       - Bearer: []
-      summary: Create a new item
+      summary: Get all chats for a farmer
       tags:
-      - Item
-  /api/v1/items/{id}:
-    delete:
-      consumes:
-      - application/json
-      parameters:
-      - description: Item ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "204":
-          description: Item deleted successfully
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/model.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/model.ErrorResponse'
-      security:
-      - Bearer: []
-      summary: Delete an item
-      tags:
-      - Item
+      - Chat
+  /api/v1/chats/{chat_id}/messages:
     get:
       consumes:
       - application/json
       parameters:
-      - description: Item ID
+      - description: Chat ID
         in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/model.ItemResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/model.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/model.ErrorResponse'
-      security:
-      - Bearer: []
-      summary: Get item by ID
-      tags:
-      - Item
-    put:
-      consumes:
-      - application/json
-      parameters:
-      - description: Item ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: Update item request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/model.UpdateItemRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Item updated successfully
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/model.ErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/model.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/model.ErrorResponse'
-      security:
-      - Bearer: []
-      summary: Update an existing item
-      tags:
-      - Item
-  /api/v1/items/farm/{farmId}:
-    get:
-      consumes:
-      - application/json
-      parameters:
-      - description: Farm ID
-        in: path
-        name: farmId
+        name: chat_id
         required: true
         type: integer
       produces:
@@ -411,10 +131,12 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/model.ItemResponse'
+              items:
+                $ref: '#/definitions/model.MessageResponse'
+              type: array
             type: array
-        "404":
-          description: Not Found
+        "400":
+          description: Bad Request
           schema:
             $ref: '#/definitions/model.ErrorResponse'
         "500":
@@ -423,9 +145,69 @@ paths:
             $ref: '#/definitions/model.ErrorResponse'
       security:
       - Bearer: []
-      summary: Get all items of a farm
+      summary: Get all messages for a chat
       tags:
-      - Item
+      - Chat
+  /api/v1/chats/{farmer_id}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Farmer ID
+        in: query
+        name: farmer_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              items:
+                $ref: '#/definitions/model.ChatResponse'
+              type: array
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get all chats for a farmer
+      tags:
+      - Chat
+  /api/v1/chats/ws/{user_id}:
+    get:
+      description: Establish a WebSocket connection for real-time chat messages between
+        users.
+      parameters:
+      - description: User ID
+        in: path
+        name: user_id
+        required: true
+        type: string
+      responses:
+        "101":
+          description: Switching Protocols to WebSocket
+        "400":
+          description: Invalid user ID
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: WebSocket connection for real-time chat
+      tags:
+      - Chat
 securityDefinitions:
   Bearer:
     in: header
