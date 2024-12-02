@@ -204,7 +204,7 @@ class ProfileAPIView(generics.GenericAPIView):
 
 class ApproveFarmerAPIView(generics.GenericAPIView):
     serializer_class = ApproveFarmerSerializer
-    permission_classes = [IsAdminUser,]
+    permission_classes = [IsAdmin,]
 
     def post(self, request):
         try:
