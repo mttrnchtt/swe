@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from .permissions import IsAdmin
 import jwt
 from .serializers import (
     RegisterSerializer,
@@ -239,7 +240,7 @@ class ApproveFarmerAPIView(generics.GenericAPIView):
 
 class AdminUserViewSetAPIView(ModelViewSet):
     queryset = User.objects.all()
-    permission_classes = [IsAdminUser,]
+    permission_classes = [IsAdmin,]
 
     def get_serializer_class(self):
         if self.action == 'list':
