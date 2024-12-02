@@ -2,21 +2,41 @@ import React, { useState } from 'react';
 import { useAuth } from '../AuthContext';
 import { useNavigate } from 'react-router-dom';
 
-const LoginPage = () => {
-    const [username, setUsername] = useState('');
+const LoginPage = ({ setUser }) => {
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const { login } = useAuth();
     const navigate = useNavigate();
 
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
-        // Example: Simple validation or authentication logic
-        if (username === 'admin' && password === 'password') {
-            login();
-            navigate('/accounts');
-        } else {
-            alert('Invalid username or password!');
+        try {
+            await fetch(`http://localhost:8000/auth/login/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email,
+                    password
+                })
+            }).then((response) => {
+                if (response && response.status === 200) {
+                    response.json().then((data) => {
+                        localStorage.setItem('refresh', JSON.stringify(data.tokens.refresh));
+                        localStorage.setItem('access', JSON.stringify(data.tokens.access));
+                        localStorage.setItem('user', data.email);
+                        setUser(data.email);
+                        login(data.tokens, data.email);
+                        navigate('/accounts');
+                    })
+                }
+                else {
+                    alert("Нет");
+                }
+            })
+        } catch (error) {
+            console.error('Login failed:', error);
         }
+
     };
 
     return (
@@ -50,17 +70,17 @@ const LoginPage = () => {
                     }}
                 >
                     <div>
-                        <label htmlFor="username" style={{
+                        <label htmlFor="email" style={{
                             color: "#000",
                             textAlign: 'center',
                             fontFamily: 'Inter',
                             fontSize: '15px',
-                        }}>Username:</label>
+                        }}>email:</label>
                         <input
                             type="text"
-                            id="username"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
+                            id="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
                             required
                             style={{ width: '100%', padding: '8px', marginTop: '5px', borderRadius: '5px', background: '#F6F6F6' }}
                         />

@@ -1,27 +1,46 @@
-import React from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './AuthContext';
+import { AuthProvider, useAuth } from './AuthContext';
 import ProtectedRoute from './ProtectedRoute';
 import Accounts from './components/Accounts';
 import LoginPage from './components/LoginPage';
 
+const PrivateRoute = ({ children }) => {
+  const { user } = useAuth();
+  return user ? children : <Navigate to="/login" replace />;
+};
+
 const App = () => {
+  const [user, setUser] = useState();
+  console.log(user)
+
   return (
     <AuthProvider>
       <Router>
         <Routes>
-          <Route
-            path="/"
-            element={<Navigate to="/accounts" replace />}
-          />
-          <Route path="/login" element={<LoginPage />} />
+          {/* {user ? (
+            <Route
+              path="/"
+              element={<Navigate to="/accounts" replace />}
+            />
+          ) : (
+            <Route
+              path="/"
+              element={<Navigate to="/login" replace />}
+            />
+          )} */}
+          <Route path="/login" element={<LoginPage setUser={setUser} />} />
           <Route
             path="/accounts"
             element={
-              <ProtectedRoute>
+              <PrivateRoute>
                 <Accounts />
-              </ProtectedRoute>
+              </PrivateRoute>
             }
+          />
+          <Route
+            path="*"
+            element={<Navigate to="/accounts" replace />}
           />
         </Routes>
       </Router>
