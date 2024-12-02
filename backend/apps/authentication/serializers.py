@@ -141,3 +141,15 @@ class ApproveFarmerSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['email']
+
+
+class UserListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'role', 'is_active', 'is_verified', 'phone_number', 'address', 'created_at', 'updated_at']
+
+
+class AdminEditProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['username', 'role', 'is_active', 'is_verified', 'phone_number', 'address']

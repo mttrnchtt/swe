@@ -1,4 +1,5 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 from .views import (
     RegisterView,
     VerifyEmail,
@@ -9,8 +10,12 @@ from .views import (
     LogoutAPIView,
     ProfileAPIView,
     ApproveFarmerAPIView,
+    AdminUserViewSetAPIView,
 )
 from rest_framework_simplejwt.views import TokenRefreshView
+
+router = DefaultRouter()
+router.register(r'admin/users', AdminUserViewSetAPIView, basename='admin-users')
 
 urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
@@ -23,4 +28,5 @@ urlpatterns = [
     path('password-reset-complete', SetNewPasswordAPIView.as_view(), name='password-reset-complete'),
     path('profile/', ProfileAPIView.as_view(), name='profile'),
     path('admin/approve-farmer/', ApproveFarmerAPIView.as_view(), name='approve-farmer'),
+    path('', include(router.urls)),
 ]

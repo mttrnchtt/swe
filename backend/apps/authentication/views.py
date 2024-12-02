@@ -6,6 +6,7 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import smart_str, smart_bytes, DjangoUnicodeDecodeError
 from rest_framework import generics, status, views
 from rest_framework.response import Response
+from rest_framework.viewsets import ModelViewSet
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 import jwt
@@ -18,10 +19,15 @@ from .serializers import (
     LogoutSerializer,
     ProfileSerializer,
     ApproveFarmerSerializer,
+    UserListSerializer,
+    AdminEditProfileSerializer,
+
 )
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from .models import User
 from .utils import Util
+
+
 
 class RegisterView(generics.GenericAPIView):
     serializer_class = RegisterSerializer
@@ -229,3 +235,15 @@ class ApproveFarmerAPIView(generics.GenericAPIView):
 
         Util.send_email(email_data)
         return Response(status=status.HTTP_204_NO_CONTENT)
+    
+
+class AdminUserViewSetAPIView(ModelViewSet):
+    queryset = User.objects.all()
+    permission_classes = [IsAdminUser,]
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return UserListSerializer
+        if self.action in ['update', 'partial_update']:
+            return AdminEditProfileSerializer
+        return super().get_serializer_class()
