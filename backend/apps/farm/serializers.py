@@ -26,7 +26,6 @@ class ProductImageSerializer(serializers.ModelSerializer):
 
 
 class ProductSerializer(serializers.ModelSerializer):
-    print('serializer accessed')
     farm = serializers.SlugRelatedField(slug_field='name', queryset=Farm.objects.all())
     images = ProductImageSerializer(many=True, required=False)
 
