@@ -1,35 +1,159 @@
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 
 class AddProductPage extends StatefulWidget {
+  final String accessToken;
+
+  AddProductPage({required this.accessToken});
+
   @override
   _AddProductPageState createState() => _AddProductPageState();
 }
 
 class _AddProductPageState extends State<AddProductPage> {
-  final _formKey = GlobalKey<FormState>();
+  // Form controllers
   final TextEditingController productNameController = TextEditingController();
-  final TextEditingController priceController = TextEditingController();
-  final TextEditingController quantityController = TextEditingController();
-  final TextEditingController descriptionController = TextEditingController();
+  final TextEditingController productPriceController = TextEditingController();
+  final TextEditingController productQuantityController =
+      TextEditingController();
+  final TextEditingController productDescriptionController =
+      TextEditingController();
 
-  String selectedCategory = 'Vegetables'; // Default category
-  String availabilityStatus = 'In stock'; // Default availability
-  List<File> images = []; // List to store selected image files
+  String? selectedFarm;
+  List<dynamic> farms = [];
 
-  // Categories and availability options
-  final List<String> categories = ['Vegetables', 'Fruits', 'Grains', 'Meat'];
-  final List<String> availabilityOptions = ['In stock', 'Out of stock'];
+  String? selectedCategory;
+  final List<String> categories = [
+    'fruits',
+    'vegetables',
+    'dairy',
+    'meat',
+    'grains',
+    'others',
+  ];
 
-  // Function to pick images from gallery or camera
-  Future<void> _pickImage(ImageSource source) async {
-    final ImagePicker _picker = ImagePicker();
-    final XFile? pickedImage = await _picker.pickImage(source: source);
-    if (pickedImage != null) {
+  File? selectedImage;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchFarms(); // Fetch farms when the page loads
+  }
+
+  // Fetch farms owned by the user
+  Future<void> fetchFarms() async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+            'http://localhost:8000/farm/'), // Change to your server IP if needed
+        headers: {
+          'Authorization': 'Bearer ${widget.accessToken}',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          farms = jsonDecode(response.body);
+        });
+        print('Fetched Farms: $farms');
+      } else {
+        print('Failed to fetch farms: ${response.body}');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to fetch farms.')),
+        );
+      }
+    } catch (e) {
+      print('Error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('An error occurred while fetching farms.')),
+      );
+    }
+  }
+
+  // Select an image using ImagePicker
+  Future<void> selectImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
       setState(() {
-        images.add(File(pickedImage.path));
+        selectedImage = File(pickedFile.path);
       });
+    }
+  }
+
+  // Save product using POST request with multipart/form-data
+  Future<void> saveProduct() async {
+    if (selectedFarm == null || selectedCategory == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please fill all required fields.')),
+      );
+      return;
+    }
+
+    // Debug: Check the fields before making the request
+    print('Product Name: ${productNameController.text}');
+    print('Category: $selectedCategory');
+    print('Price: ${productPriceController.text}');
+    print('Quantity: ${productQuantityController.text}');
+    print('Description: ${productDescriptionController.text}');
+    print('Farm: $selectedFarm');
+
+    try {
+      final uri = Uri.parse('http://localhost:8000/farm/products/');
+      final request = http.MultipartRequest('POST', uri)
+        ..headers['Authorization'] = 'Bearer ${widget.accessToken}'
+        // Fields for product details
+        ..fields['name'] = productNameController.text
+        ..fields['category'] = selectedCategory!
+        ..fields['price'] = productPriceController.text
+        ..fields['quantity'] = productQuantityController.text
+        ..fields['description'] = productDescriptionController.text
+        ..fields['farm'] = selectedFarm!; // Sending farm name (not ID)
+
+      // Attach the selected image if available (make it optional)
+      if (selectedImage != null) {
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'image', // Backend expects 'image' for image upload (make sure the field name matches backend)
+            selectedImage!.path,
+          ),
+        );
+      }
+
+      final response = await request.send();
+
+      if (response.statusCode == 201) {
+        print('Product Created Successfully');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Product added successfully!')),
+        );
+
+        // Clear the form fields
+        productNameController.clear();
+        productPriceController.clear();
+        productQuantityController.clear();
+        productDescriptionController.clear();
+        setState(() {
+          selectedFarm = null;
+          selectedCategory = null;
+          selectedImage = null; // Clear image selection
+        });
+      } else {
+        final responseBody = await response.stream.bytesToString();
+        print('Failed to add product: $responseBody');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to add product. Please try again.')),
+        );
+      }
+    } catch (e) {
+      print('Error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('An error occurred: $e')),
+      );
     }
   }
 
@@ -37,244 +161,117 @@ class _AddProductPageState extends State<AddProductPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        automaticallyImplyLeading: false,
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: Text("Cancel", style: TextStyle(color: Colors.red)),
-            ),
-            TextButton(
-              onPressed: () {
-                if (_formKey.currentState!.validate()) {
-                  // Example: Sending data to the database or API
-                  final newProduct = {
-                    'name': productNameController.text,
-                    'category': selectedCategory,
-                    'price': priceController.text,
-                    'quantity': quantityController.text,
-                    'description': descriptionController.text,
-                    'availability': availabilityStatus,
-                    'images': images
-                        .map((image) => image.path)
-                        .toList(), // Paths to selected images
-                  };
-
-                  print("Sending data to the database: $newProduct");
-
-                  // Simulate sending data to an API (replace with actual API call)
-                  // Example:
-                  // await sendProductToDatabase(newProduct);
-                }
-              },
-              child: Text("Add", style: TextStyle(color: Colors.green)),
-            ),
-          ],
-        ),
+        title: Text("Add Product"),
+        centerTitle: true,
+        backgroundColor: Colors.green,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Image Picker
-                Row(
-                  children: [
-                    GestureDetector(
-                      onTap: () async {
-                        // Show dialog to choose between Camera and Gallery
-                        showModalBottomSheet(
-                          context: context,
-                          builder: (BuildContext context) {
-                            return SafeArea(
-                              child: Wrap(
-                                children: [
-                                  ListTile(
-                                    leading: Icon(Icons.camera_alt),
-                                    title: Text('Take a Photo'),
-                                    onTap: () {
-                                      Navigator.of(context).pop();
-                                      _pickImage(ImageSource.camera);
-                                    },
-                                  ),
-                                  ListTile(
-                                    leading: Icon(Icons.photo),
-                                    title: Text('Choose from Gallery'),
-                                    onTap: () {
-                                      Navigator.of(context).pop();
-                                      _pickImage(ImageSource.gallery);
-                                    },
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        );
-                      },
-                      child: Container(
-                        width: 70,
-                        height: 70,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[200],
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(Icons.add, size: 30),
-                      ),
-                    ),
-                    SizedBox(width: 8),
-                    ...images.map(
-                      (image) => Stack(
-                        children: [
-                          Container(
-                            margin: EdgeInsets.only(right: 8),
-                            width: 70,
-                            height: 70,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(8),
-                              image: DecorationImage(
-                                image: FileImage(
-                                    image), // Use FileImage for File objects
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                          ),
-                          Positioned(
-                            top: 4,
-                            right: 4,
-                            child: GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  images.remove(image);
-                                });
-                              },
-                              child: CircleAvatar(
-                                radius: 12,
-                                backgroundColor: Colors.black.withOpacity(0.5),
-                                child: Icon(Icons.close,
-                                    size: 16, color: Colors.white),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Product Information",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 10),
+              DropdownButtonFormField<String>(
+                value: selectedFarm,
+                items: farms.map<DropdownMenuItem<String>>((farm) {
+                  return DropdownMenuItem<String>(
+                    value: farm['name'], // Sending farm name now
+                    child: Text(farm['name']), // Display farm name
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    selectedFarm = value;
+                  });
+                },
+                decoration: InputDecoration(
+                  labelText: "Select Farm",
+                  border: OutlineInputBorder(),
                 ),
-                SizedBox(height: 20),
-                // Product Name
-                TextFormField(
-                  controller: productNameController,
-                  decoration: InputDecoration(
-                    labelText: "Product name",
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter a product name';
-                    }
-                    return null;
-                  },
+              ),
+              SizedBox(height: 10),
+              DropdownButtonFormField<String>(
+                value: selectedCategory,
+                items: categories.map<DropdownMenuItem<String>>((category) {
+                  return DropdownMenuItem<String>(
+                    value: category,
+                    child: Text(category),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    selectedCategory = value;
+                  });
+                },
+                decoration: InputDecoration(
+                  labelText: "Select Category",
+                  border: OutlineInputBorder(),
                 ),
-                SizedBox(height: 16),
-                // Category
-                DropdownButtonFormField<String>(
-                  value: selectedCategory,
-                  decoration: InputDecoration(
-                    labelText: "Category",
-                    border: OutlineInputBorder(),
-                  ),
-                  items: categories.map((category) {
-                    return DropdownMenuItem(
-                      value: category,
-                      child: Text(category),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      selectedCategory = value!;
-                    });
-                  },
+              ),
+              SizedBox(height: 10),
+              TextField(
+                controller: productNameController,
+                decoration: InputDecoration(
+                  labelText: "Product Name",
+                  border: OutlineInputBorder(),
                 ),
-                SizedBox(height: 16),
-                // Price
-                TextFormField(
-                  controller: priceController,
-                  decoration: InputDecoration(
-                    labelText: "Price per kg",
-                    prefixText: '\$',
-                    border: OutlineInputBorder(),
-                  ),
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter a price';
-                    }
-                    return null;
-                  },
+              ),
+              SizedBox(height: 10),
+              TextField(
+                controller: productPriceController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: "Price (e.g., 10.50)",
+                  border: OutlineInputBorder(),
                 ),
-                SizedBox(height: 16),
-                // Quantity
-                TextFormField(
-                  controller: quantityController,
-                  decoration: InputDecoration(
-                    labelText: "Quantity",
-                    suffixText: 'kg',
-                    border: OutlineInputBorder(),
-                  ),
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter a quantity';
-                    }
-                    return null;
-                  },
+              ),
+              SizedBox(height: 10),
+              TextField(
+                controller: productQuantityController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: "Quantity",
+                  border: OutlineInputBorder(),
                 ),
-                SizedBox(height: 16),
-                // Description
-                TextFormField(
-                  controller: descriptionController,
-                  decoration: InputDecoration(
-                    labelText: "Description",
-                    border: OutlineInputBorder(),
-                  ),
-                  maxLines: 3,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter a description';
-                    }
-                    return null;
-                  },
+              ),
+              SizedBox(height: 10),
+              TextField(
+                controller: productDescriptionController,
+                decoration: InputDecoration(
+                  labelText: "Description",
+                  border: OutlineInputBorder(),
                 ),
-                SizedBox(height: 16),
-                // Availability
-                DropdownButtonFormField<String>(
-                  value: availabilityStatus,
-                  decoration: InputDecoration(
-                    labelText: "Availability",
-                    border: OutlineInputBorder(),
-                  ),
-                  items: availabilityOptions.map((option) {
-                    return DropdownMenuItem(
-                      value: option,
-                      child: Text(option),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      availabilityStatus = value!;
-                    });
-                  },
+                maxLines: 3,
+              ),
+              SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: selectImage,
+                child: Text("Select Image (Optional)"),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: Size(double.infinity, 50),
+                  backgroundColor: Colors.blue,
                 ),
-              ],
-            ),
+              ),
+              if (selectedImage != null)
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text("Selected Image: ${selectedImage!.path}"),
+                ),
+              SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: saveProduct,
+                child: Text("Add Product"),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: Size(double.infinity, 50),
+                  backgroundColor: Colors.green,
+                ),
+              ),
+            ],
           ),
         ),
       ),

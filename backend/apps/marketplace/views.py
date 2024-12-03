@@ -10,7 +10,24 @@ from .serializers import (
     OrderCreateSerializer,
 )
 from .permissions import IsBuyer
+from rest_framework import serializers
+from apps.farm.models import Product
+from .models import Cart
 
+
+class CartItemSerializer(serializers.ModelSerializer):
+    #product_name = serializers.CharField(source='product.name')
+    product_price = serializers.DecimalField(source='product.price', max_digits=10, decimal_places=2)
+    #product_image = serializers.ImageField(source='product.image', required=False)
+
+    class Meta:
+        model = Cart
+        fields = ['quantity', 'product_price']
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['total_price'] = representation['product_price'] * instance.quantity
+        return representation
 
 class CartListCreateAPIView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated, IsBuyer]

@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
+// Import your other pages here
 import 'product_card_page.dart';
 import 'add_product_page.dart';
 import 'navbar.dart';
@@ -7,6 +11,7 @@ import 'profile_page.dart';
 import 'cart_page.dart';
 import 'analytics_page.dart';
 import 'chat_page.dart';
+import 'navbar.dart';
 
 class DashboardScreen extends StatefulWidget {
   @override
@@ -16,271 +21,122 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int selectedIndex = 0;
   late String role; // Declare role
+  late String accessToken;
+
+  List<Map<String, dynamic>> products = []; // List to store products
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Retrieve the role passed from the login screen
-    final args = ModalRoute.of(context)!.settings.arguments;
-    if (args != null && args is String) {
-      role = args; // Assign the role passed from the login screen
-    } else {
-      role = 'farmer'; // Default role in case role is not passed
-    }
-    print('User Role in didChangeDependencies: $role');
+    final args =
+        ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+    role = args['role'];
+    accessToken = args['accessToken'];
+
+    fetchProducts(); // Fetch products when the dashboard loads
   }
 
-  // Example products
-  final List<Map<String, String>> allProducts = [
-    {
-      'name': 'Sweet corn',
-      'price': '15',
-      'category': 'Vegetables',
-      'quantity': '150 kg',
-      'farm': 'Coldwind Farm',
-      'image': 'assets/images/corn.jpeg',
-    },
-    {
-      'name': 'Cherry tomatoes',
-      'price': '25',
-      'category': 'Vegetables',
-      'quantity': '210 kg',
-      'farm': 'Coldwind Farm',
-      'image': 'assets/images/tomatoes.jpg',
-    },
-    {
-      'name': 'Blueberry',
-      'price': '48',
-      'category': 'Fruits',
-      'quantity': '78 kg',
-      'farm': 'Stepnogorsk',
-      'availability': 'In stock',
-      'image': 'assets/images/blueberry.jpg',
-    },
-    {
-      'name': 'Processed Wheat',
-      'price': '16',
-      'category': 'Wheat',
-      'quantity': '120 kg',
-      'farm': 'Kokshetau',
-      'availability': 'In stock',
-      'image': 'assets/images/wheat.jpg',
-    },
-  ];
+  Future<void> fetchProducts() async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+            'http://localhost:8000/marketplace/products/'), // Adjust the URL
+        headers: {'Authorization': 'Bearer $accessToken'},
+      );
 
-  List<Map<String, String>> filteredProducts = [];
-  String searchQuery = "";
-  String selectedCategory = "All";
-  String selectedFarm = "All";
-  double minPrice = 0;
-  double maxPrice = 50;
-  String sortOrder = "Cheap first";
-
-  @override
-  void initState() {
-    super.initState();
-    filteredProducts = allProducts; // Initially show all products
+      if (response.statusCode == 200) {
+        final List<dynamic> responseData = jsonDecode(response.body);
+        setState(() {
+          products = responseData.cast<Map<String, dynamic>>();
+        });
+        //print('Fetched Products: $products');
+      } else {
+        print('Failed to fetch products: ${response.body}');
+      }
+    } catch (e) {
+      print('Error fetching products: $e');
+    }
   }
 
   // Search products by name
   void searchProducts(String query) {
     setState(() {
-      searchQuery = query.toLowerCase();
-      filterAndSortProducts();
-    });
-  }
-
-  // Filter and sort products
-  void filterAndSortProducts() {
-    setState(() {
-      filteredProducts = allProducts.where((product) {
-        final productName = product['name']!.toLowerCase();
-        final matchesSearch = productName.contains(searchQuery);
-
-        // Check category filter
-        final matchesCategory = selectedCategory == "All" ||
-            product['category'] == selectedCategory;
-
-        // Check farm filter
-        final matchesFarm =
-            selectedFarm == "All" || product['farm'] == selectedFarm;
-
-        // Check price range filter
-        final productPrice = double.tryParse(
-              product['price']!.replaceAll('\$', ''), // Remove "$"
-            ) ??
-            0;
-        final matchesPrice =
-            productPrice >= minPrice && productPrice <= maxPrice;
-
-        return matchesSearch && matchesCategory && matchesFarm && matchesPrice;
+      query = query.toLowerCase();
+      products = products.where((product) {
+        return product['name'].toLowerCase().contains(query);
       }).toList();
-
-      // Apply sorting
-      if (sortOrder == "Cheap first") {
-        filteredProducts.sort((a, b) {
-          final priceA = double.tryParse(a['price']!.replaceAll('\$', '')) ?? 0;
-          final priceB = double.tryParse(b['price']!.replaceAll('\$', '')) ?? 0;
-          return priceA.compareTo(priceB);
-        });
-      } else if (sortOrder == "Expensive first") {
-        filteredProducts.sort((a, b) {
-          final priceA = double.tryParse(a['price']!.replaceAll('\$', '')) ?? 0;
-          final priceB = double.tryParse(b['price']!.replaceAll('\$', '')) ?? 0;
-          return priceB.compareTo(priceA);
-        });
-      }
     });
   }
 
-  // Show filters modal
-  void showFilters() {
-    showModalBottomSheet(
+  void _showFilterDialog(BuildContext context) {
+    showDialog(
       context: context,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
       builder: (BuildContext context) {
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Sort by
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text("Sort by"),
-                  DropdownButton<String>(
-                    value: sortOrder,
-                    items: ["Cheap first", "Expensive first"].map((option) {
-                      return DropdownMenuItem(
-                        value: option,
-                        child: Text(option),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        sortOrder = value!;
-                      });
-                    },
-                  ),
-                ],
-              ),
-              SizedBox(height: 16),
-              // Categories filter
-              DropdownButtonFormField<String>(
-                value: selectedCategory,
-                decoration: InputDecoration(
-                  labelText: "Categories",
-                  border: OutlineInputBorder(),
+        return AlertDialog(
+          title: Text("Filter Products"),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Add filtering options here
+                Text("Category:"),
+                TextField(
+                  decoration: InputDecoration(hintText: "Enter category"),
+                  onChanged: (value) {
+                    // Update category filter logic
+                  },
                 ),
-                items: ["All", "Vegetables", "Fruits", "Wheat", "Seeds", "Rice"]
-                    .map((category) {
-                  return DropdownMenuItem(
-                    value: category,
-                    child: Text(category),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    selectedCategory = value!;
-                  });
-                },
-              ),
-              SizedBox(height: 16),
-              // Farm filter
-              DropdownButtonFormField<String>(
-                value: selectedFarm,
-                decoration: InputDecoration(
-                  labelText: "Farms",
-                  border: OutlineInputBorder(),
+                SizedBox(height: 10),
+                Text("Price Range:"),
+                Row(
+                  children: [
+                    Text("Min Price:"),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: TextField(
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(hintText: "Min price"),
+                        onChanged: (value) {
+                          // Update price filter logic
+                        },
+                      ),
+                    ),
+                  ],
                 ),
-                items: ["All", "Coldwind Farm", "Kokshetau", "Stepnogorsk"]
-                    .map((farm) {
-                  return DropdownMenuItem(
-                    value: farm,
-                    child: Text(farm),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    selectedFarm = value!;
-                  });
-                },
-              ),
-              SizedBox(height: 16),
-              // Price range filter
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text("Price range"),
-                  SizedBox(height: 8),
-                  Row(
-                    children: [
-                      // Min Price Input
-                      Expanded(
-                        child: TextField(
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
-                            labelText: "Min Price",
-                            border: OutlineInputBorder(),
-                          ),
-                          onChanged: (value) {
-                            setState(() {
-                              minPrice = double.tryParse(value) ?? 0;
-                            });
-                          },
-                        ),
+                SizedBox(height: 10),
+                Row(
+                  children: [
+                    Text("Max Price:"),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: TextField(
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(hintText: "Max price"),
+                        onChanged: (value) {
+                          // Update price filter logic
+                        },
                       ),
-                      SizedBox(width: 16),
-                      // Max Price Input
-                      Expanded(
-                        child: TextField(
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
-                            labelText: "Max Price",
-                            border: OutlineInputBorder(),
-                          ),
-                          onChanged: (value) {
-                            setState(() {
-                              maxPrice = double.tryParse(value) ?? 100;
-                            });
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              SizedBox(height: 16),
-              // Apply Filters Button
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(context); // Close the modal
-                    },
-                    child: Text(
-                      "Cancel",
-                      style: TextStyle(color: Colors.red),
                     ),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      filterAndSortProducts(); // Apply filters
-                      Navigator.pop(context); // Close the modal
-                    },
-                    child: Text(
-                      "Apply",
-                      style: TextStyle(color: Colors.green),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                // You can perform the filtering logic here
+                Navigator.pop(context);
+              },
+              child: Text("Apply Filter"),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Close the filter dialog
+              },
+              child: Text("Cancel"),
+            ),
+          ],
         );
       },
     );
@@ -288,11 +144,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Retrieve the role passed from the login screen
-    final role =
-        ModalRoute.of(context)!.settings.arguments as String? ?? 'farmer';
-    print('User Role in build: $role');
-
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -314,7 +165,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 prefixIcon: Icon(Icons.search),
                 suffixIcon: IconButton(
                   icon: Icon(Icons.filter_alt),
-                  onPressed: showFilters,
+                  onPressed: () {
+                    _showFilterDialog(context);
+                  },
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8.0),
@@ -325,8 +178,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             SizedBox(height: 20),
             // Product List
             Expanded(
-              child: filteredProducts.isEmpty
-                  ? Center(child: Text("No products found"))
+              child: products.isEmpty
+                  ? Center(child: CircularProgressIndicator())
                   : GridView.builder(
                       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
@@ -334,9 +187,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         mainAxisSpacing: 8.0,
                         childAspectRatio: 3 / 4,
                       ),
-                      itemCount: filteredProducts.length,
+                      itemCount: products.length,
                       itemBuilder: (context, index) {
-                        final product = filteredProducts[index];
+                        final product = products[index];
+                        final productName = product['name'] ??
+                            'No Name'; // Provide default value
+                        final productPrice =
+                            product['price'] ?? '0.0'; // Providez default price
+                        final productFarm =
+                            product['farm'] ?? 'Unknown Farm'; // Default farm
+                        final productImage = product['image'] ??
+                            ''; // Default image or empty string
+
                         return GestureDetector(
                           onTap: () {
                             Navigator.push(
@@ -345,6 +207,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 builder: (context) => ProductCardPage(
                                   productDetails: product,
                                   role: role,
+                                  //accessToken: accessToken,
                                 ),
                               ),
                             );
@@ -362,11 +225,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     borderRadius: BorderRadius.vertical(
                                       top: Radius.circular(8.0),
                                     ),
-                                    child: Image.asset(
-                                      product['image']!,
-                                      fit: BoxFit.cover,
-                                      width: double.infinity,
-                                    ),
+                                    child: productImage.isNotEmpty
+                                        ? Image.network(
+                                            productImage,
+                                            fit: BoxFit.cover,
+                                            width: double.infinity,
+                                            errorBuilder:
+                                                (context, error, stackTrace) {
+                                              return Icon(Icons.broken_image,
+                                                  size: 50);
+                                            },
+                                          )
+                                        : Container(
+                                            color: Colors.grey,
+                                            child: Center(
+                                              child: Icon(
+                                                  Icons.image_not_supported,
+                                                  size: 50),
+                                            ),
+                                          ),
                                   ),
                                 ),
                                 Padding(
@@ -376,17 +253,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        "\$${product['price']}",
+                                        "\$${productPrice}",
                                         style: TextStyle(
                                             fontSize: 16,
                                             fontWeight: FontWeight.bold),
                                       ),
                                       SizedBox(height: 4),
-                                      Text(product['name']!,
-                                          style: TextStyle(fontSize: 14)),
+                                      Text(
+                                        productName,
+                                        style: TextStyle(fontSize: 14),
+                                      ),
                                       SizedBox(height: 4),
                                       Text(
-                                        "Farm: ${product['farm']}",
+                                        "Farm: $productFarm",
                                         style: TextStyle(
                                             fontSize: 12, color: Colors.grey),
                                       ),
@@ -409,7 +288,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => AddProductPage(),
+                    builder: (context) => AddProductPage(
+                      accessToken: accessToken,
+                    ),
                   ),
                 );
               },
@@ -427,7 +308,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
           // Navigation logic for each tab
           if (index == 0) {
-            // Home
+            // Home - No action needed here as we're already on home
           } else if (index == 1) {
             Navigator.push(
               context,
@@ -458,7 +339,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => CartPage(),
+                  builder: (context) => CartPage(
+                    accessToken: accessToken,
+                  ),
                 ),
               );
             }
@@ -466,7 +349,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => ProfilePage(role: role),
+                builder: (context) => ProfilePage(
+                  role: role,
+                  accessToken: accessToken, // Pass the access token here
+                ),
               ),
             );
           }

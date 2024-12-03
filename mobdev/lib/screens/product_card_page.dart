@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class ProductCardPage extends StatefulWidget {
-  final Map<String, String> productDetails;
+  final Map<String, dynamic> productDetails;
   final String role; // Role: Farmer or Buyer
 
   const ProductCardPage({required this.productDetails, required this.role});
@@ -82,7 +82,7 @@ class _ProductCardPageState extends State<ProductCardPage> {
                         "Price per kg",
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      Text(widget.productDetails['price'] ?? ''),
+                      Text(widget.productDetails['price'].toString() ?? ''),
                     ],
                   ),
                   Divider(),
@@ -93,7 +93,7 @@ class _ProductCardPageState extends State<ProductCardPage> {
                         "Quantity",
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      Text(widget.productDetails['quantity'] ?? ''),
+                      Text(widget.productDetails['quantity'].toString() ?? ''),
                     ],
                   ),
                   Divider(),

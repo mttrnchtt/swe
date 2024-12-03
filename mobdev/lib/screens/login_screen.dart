@@ -18,7 +18,7 @@ class LoginScreen extends StatelessWidget {
     try {
       final response = await http.post(
         Uri.parse(
-            'http://127.0.0.1:8000/auth/login/'), // Replace with your backend endpoint
+            'http://localhost:8000/auth/login/'), // Replace with your backend endpoint
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(data),
       );
@@ -26,13 +26,22 @@ class LoginScreen extends StatelessWidget {
       if (response.statusCode == 200) {
         print('Response Body: ${response.body}');
         final userData = jsonDecode(response.body);
-        final role = userData['role']; // Role returned in response
-        print('Navigating to Dashboard with Role: $role');
-        // Navigate to the dashboard page with the role as an argument
+
+        // Extract role and access token from response
+        final role = userData['role'];
+        final accessToken = userData['tokens']['access'];
+
+        print(
+            'Navigating to Dashboard with Role: $role and AccessToken: $accessToken');
+
+        // Navigate to the dashboard page with role and access token
         Navigator.pushReplacementNamed(
           context,
           '/dashboard',
-          arguments: role, // Passing the user role to the dashboard screen
+          arguments: {
+            'role': role,
+            'accessToken': accessToken
+          }, // Pass both as a map
         );
       } else {
         final errorResponse = jsonDecode(response.body);

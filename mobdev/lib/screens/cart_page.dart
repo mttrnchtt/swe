@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class CartPage extends StatefulWidget {
+  final String accessToken; // Add accessToken parameter
+
+  CartPage({required this.accessToken});
   @override
   _CartPageState createState() => _CartPageState();
 }
@@ -8,11 +13,52 @@ class CartPage extends StatefulWidget {
 class _CartPageState extends State<CartPage> {
   // Example Cart Items (mock data, can be replaced with database queries)
   List<Map<String, dynamic>> cartItems = [
-    {'name': 'Sweet corn', 'price': 15, 'quantity': 2}, // 2 kg of corn
-    {'name': 'Cherry tomatoes', 'price': 25, 'quantity': 1}, // 1 kg of tomatoes
+    {'name': 'Apples', 'price': 27, 'quantity': 2},
+    {'name': 'Cucumber', 'price': 19, 'quantity': 3}, // 1 kg of tomatoes
   ];
 
   static const double deliveryFee = 12.0; // Fixed delivery fee
+
+  Future<void> addToCart(Map<String, dynamic> product, int quantity) async {
+    try {
+      // Debugging: Print the data before sending to the server
+      print('Adding to cart:');
+      print('Product ID: ${product['id']}');
+      print('Quantity: $quantity');
+
+      final response = await http.post(
+        Uri.parse(
+            'http://localhost:8000/marketplace/cart/'), // Your cart add endpoint
+        headers: {
+          'Authorization': 'Bearer ${widget.accessToken}',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'product_id': product['id'],
+          'quantity': quantity,
+        }),
+      );
+
+      // Debugging: Print the response status and body
+      print('Response Status: ${response.statusCode}');
+      print('Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        print('Product added to cart');
+        // Refresh the cart after adding
+      } else {
+        print('Failed to add product to cart: ${response.body}');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to add product to cart')),
+        );
+      }
+    } catch (e) {
+      print('Error adding product to cart: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('An error occurred while adding to cart')),
+      );
+    }
+  }
 
   // Calculate total price
   double calculateTotal() {
@@ -46,7 +92,7 @@ class _CartPageState extends State<CartPage> {
                 "Delivery Address:",
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
-              Text("123 Main Street, Springfield"), // Mock address
+              Text("Kabanbay 53"), // Mock address
               Divider(),
               Text(
                 "Total Payment:",

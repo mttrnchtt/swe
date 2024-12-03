@@ -4,8 +4,9 @@ import 'dart:convert';
 
 class ProfilePage extends StatefulWidget {
   final String role;
+  final String accessToken; // Add accessToken parameter
 
-  ProfilePage({required this.role});
+  ProfilePage({required this.role, required this.accessToken});
 
   @override
   _ProfilePageState createState() => _ProfilePageState();
@@ -24,15 +25,42 @@ class _ProfilePageState extends State<ProfilePage> {
       TextEditingController();
 
   bool isAddingFarm = false; // Track whether the user is adding a new farm
+  List<dynamic> farms = []; // Store the list of farms
 
   @override
   void initState() {
     super.initState();
+    fetchFarms(); // Fetch farms when the page loads
+  }
 
-    // Initialize controllers with mock data (replace with actual user data)
-    usernameController.text = "ulana01";
-    phoneController.text = "87753092477";
-    addressController.text = "aabb 5";
+  // Fetch farms from the backend
+  Future<void> fetchFarms() async {
+    try {
+      final response = await http.get(
+        Uri.parse('http://localhost:8000/farm/'), // Replace with your endpoint
+        headers: {
+          'Authorization':
+              'Bearer ${widget.accessToken}', // Include accessToken
+        },
+      );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          farms = jsonDecode(response.body); // Parse and store farms
+        });
+        print('Fetched Farms: $farms');
+      } else {
+        print('Failed to fetch farms: ${response.body}');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to fetch farms.')),
+        );
+      }
+    } catch (e) {
+      print('Error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('An error occurred while fetching farms.')),
+      );
+    }
   }
 
   // Save personal information using PUT request
@@ -46,8 +74,12 @@ class _ProfilePageState extends State<ProfilePage> {
     try {
       final response = await http.put(
         Uri.parse(
-            'http://localhost:8000/auth/profile'), // Replace with your endpoint
-        headers: {'Content-Type': 'application/json'},
+            'http://localhost:8000/auth/profile/'), // Replace with your endpoint
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization':
+              'Bearer ${widget.accessToken}', // Include accessToken
+        },
         body: jsonEncode(personalInfo),
       );
 
@@ -73,18 +105,23 @@ class _ProfilePageState extends State<ProfilePage> {
   // Save farm information using POST request
   Future<void> saveFarmInfo() async {
     final farmInfo = {
-      'farm_name': farmNameController.text,
-      'farm_location': farmLocationController.text,
-      'farm_description': farmDescriptionController.text,
+      'name': farmNameController.text,
+      'location': farmLocationController.text,
+      'description': farmDescriptionController.text,
     };
 
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:8000/farm'), // Replace with your endpoint
-        headers: {'Content-Type': 'application/json'},
+        Uri.parse('http://localhost:8000/farm/'), // Replace with your endpoint
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization':
+              'Bearer ${widget.accessToken}', // Include accessToken
+        },
         body: jsonEncode(farmInfo),
       );
-
+      print('Response Status: ${response.statusCode}');
+      print('Response Body: ${response.body}');
       if (response.statusCode == 201) {
         print('Farm Created: ${response.body}');
         ScaffoldMessenger.of(context).showSnackBar(
@@ -99,6 +136,9 @@ class _ProfilePageState extends State<ProfilePage> {
         setState(() {
           isAddingFarm = false; // Hide farm creation form
         });
+
+        // Refresh the list of farms
+        fetchFarms();
       } else {
         print('Failed to create farm: ${response.body}');
         ScaffoldMessenger.of(context).showSnackBar(
@@ -169,9 +209,26 @@ class _ProfilePageState extends State<ProfilePage> {
               if (widget.role == 'farmer') ...[
                 SizedBox(height: 20),
                 Text(
-                  "Farm Information",
+                  "Your Farms",
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: NeverScrollableScrollPhysics(),
+                  itemCount: farms.length,
+                  itemBuilder: (context, index) {
+                    final farm = farms[index];
+                    return Card(
+                      margin: EdgeInsets.symmetric(vertical: 8.0),
+                      child: ListTile(
+                        title: Text(farm['name']),
+                        subtitle: Text(farm['location']),
+                        trailing: Text(farm['description'] ?? ''),
+                      ),
+                    );
+                  },
+                ),
+                SizedBox(height: 20),
                 if (!isAddingFarm) ...[
                   ElevatedButton(
                     onPressed: () {
