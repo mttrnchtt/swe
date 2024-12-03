@@ -18,17 +18,6 @@ const App = () => {
     <AuthProvider>
       <Router>
         <Routes>
-          {/* {user ? (
-            <Route
-              path="/"
-              element={<Navigate to="/accounts" replace />}
-            />
-          ) : (
-            <Route
-              path="/"
-              element={<Navigate to="/login" replace />}
-            />
-          )} */}
           <Route path="/login" element={<LoginPage setUser={setUser} />} />
           <Route
             path="/accounts"

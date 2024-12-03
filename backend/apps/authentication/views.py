@@ -115,7 +115,18 @@ class LoginAPIView(generics.GenericAPIView):
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        #return Response(serializer.data, status=status.HTTP_200_OK)
+        # Retrieve the user instance
+        user = User.objects.get(email=serializer.validated_data['email'])
+
+        # Create response data including tokens and role
+        response_data = {
+            'email': user.email,
+            'username': user.username,
+            'role': user.role,  # Add the role field to the response
+            'tokens': serializer.data['tokens'],  # Assuming tokens are included in the serializer
+        }
+        return Response(response_data, status=status.HTTP_200_OK)
     
 
 class RequestPasswordResetEmail(generics.GenericAPIView):
